@@ -30,6 +30,11 @@ public class ChatServer {
 
     public static void removeClient(PrintWriter writer) {
         synchronized (clientWriters) {
+            String name = clientNames.get(writer);
+            if (name != null) {
+                broadcast("LEFT:" + name, writer);
+                System.out.println(name + " has left.");
+            }
             clientWriters.remove(writer);
             clientNames.remove(writer);
         }
@@ -52,6 +57,21 @@ public class ChatServer {
             for (PrintWriter writer : clientWriters) {
                 if (writer != excludeWriter) {
                     writer.println(message);
+                }
+            }
+        }
+    }
+
+    public static void sendPrivate(String targetName, String message, PrintWriter senderWriter) {
+        synchronized (clientWriters) {
+            for (Map.Entry<PrintWriter, String> entry : clientNames.entrySet()) {
+                if (entry.getValue().equals(targetName)) {
+                    PrintWriter targetWriter = entry.getKey();
+                    // Send to Target
+                    targetWriter.println(message);
+                    // Echo back to Sender (so they see what they sent)
+                    senderWriter.println(message);
+                    return;
                 }
             }
         }

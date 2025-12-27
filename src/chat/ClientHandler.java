@@ -37,8 +37,20 @@ public class ClientHandler extends Thread {
 
             String message;
             while ((message = in.readLine()) != null) {
-                System.out.println("Received: " + message);
-                ChatServer.broadcast(message, out);
+                System.out.println("Received from " + myName + ": " + message);
+                if (message.startsWith("PM:")) {
+                    // Format: PM:TargetName:MessageContent
+                    String[] parts = message.split(":", 3);
+                    if (parts.length >= 3) {
+                        String target = parts[1];
+                        String msgContent = parts[2];
+                        ChatServer.sendPrivate(target, "PM:" + myName + ":" + msgContent, out);
+                    }
+                } else {
+                    // Broadcast as Global Message
+                    // Format: MSG:SenderName:Content
+                    ChatServer.broadcast("MSG:" + myName + ":" + message, out);
+                }
             }
         } catch (IOException e) {
             System.out.println("Error handling client: " + e.getMessage());
