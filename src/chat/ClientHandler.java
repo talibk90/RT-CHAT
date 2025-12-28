@@ -32,6 +32,11 @@ public class ClientHandler extends Thread {
                 out.println("PRESENT:" + otherName);
             }
 
+            // Send history
+            for (String hist : ChatServer.getHistory()) {
+                out.println(hist);
+            }
+
             // Notify others about me
             ChatServer.broadcast("JOIN:" + myName, out);
 

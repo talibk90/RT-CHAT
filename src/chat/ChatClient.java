@@ -174,17 +174,18 @@ public class ChatClient {
 
     // Switch to chat view for a user
     void openChat(String peer) {
-        currentChatPeer = peer;
-        chatTitle.setText(peer);
-        unreadMap.remove(peer);
+        String realPeer = peer.replace(" (Offline)", ""); // Normalize name
+        currentChatPeer = realPeer;
+        chatTitle.setText(peer); // Show full status in title if desired, or just realPeer
+        unreadMap.remove(realPeer);
         contactsList.repaint();
-        chatPanels.putIfAbsent(peer, createPanel());
+        chatPanels.putIfAbsent(realPeer, createPanel());
 
         BorderLayout l = (BorderLayout) chatContainer.getLayout();
         if (l.getLayoutComponent("Center") != null)
             chatContainer.remove(l.getLayoutComponent("Center"));
 
-        JScrollPane s = new JScrollPane(chatPanels.get(peer));
+        JScrollPane s = new JScrollPane(chatPanels.get(realPeer));
         s.setBorder(null);
         s.getViewport().setBackground(isDarkMode ? BG_DARK : BG_LIGHT);
         s.getVerticalScrollBar().setUnitIncrement(16);
@@ -233,24 +234,35 @@ public class ChatClient {
     void process(String line) {
         if (line.startsWith("JOIN:") || line.startsWith("PRESENT:")) {
             String p = line.split(":")[1];
-            if (!contactsModel.contains(p) && !p.equals(myName))
-                contactsModel.addElement(p);
-        } else if (line.startsWith("LEFT:"))
-            contactsModel.removeElement(line.split(":")[1]);
-        else if (line.startsWith("PM:") || line.startsWith("MSG:")) {
+            if (!contactsModel.contains(p) && !p.equals(myName)) {
+                // Check if offline version exists
+                int offIdx = contactsModel.indexOf(p + " (Offline)");
+                if (offIdx != -1)
+                    contactsModel.set(offIdx, p);
+                else
+                    contactsModel.addElement(p);
+            }
+        } else if (line.startsWith("LEFT:")) {
+            String p = line.split(":")[1];
+            int idx = contactsModel.indexOf(p);
+            if (idx != -1)
+                contactsModel.set(idx, p + " (Offline)");
+        } else if (line.startsWith("PM:") || line.startsWith("MSG:")) {
             String[] p = line.split(":", 3);
             if (p.length >= 3) {
                 String s = p[1], m = p[2],
                         target = line.startsWith("PM:") ? (s.equals(myName) ? currentChatPeer : s) : "📢 Announcements";
                 if (target != null) {
-                    chatPanels.putIfAbsent(target, createPanel());
-                    addMsg(chatPanels.get(target),
+                    // Handle offline target by removing suffix for lookup
+                    String realTarget = target.replace(" (Offline)", "");
+                    chatPanels.putIfAbsent(realTarget, createPanel());
+                    addMsg(chatPanels.get(realTarget),
                             (!line.startsWith("PM:") && !s.equals(myName)) ? "<b>" + s + ":</b> " + m : m,
                             s.equals(myName));
-                    if (!s.equals(myName) && !target.equals(currentChatPeer)) {
-                        unreadMap.merge(target, 1, Integer::sum);
+                    if (!s.equals(myName) && !realTarget.equals(currentChatPeer)) {
+                        unreadMap.merge(realTarget, 1, Integer::sum);
                         contactsList.repaint();
-                    } else if (target.equals(currentChatPeer)) {
+                    } else if (realTarget.equals(currentChatPeer)) {
                         chatContainer.revalidate();
                         Arrays.stream(chatContainer.getComponents()).filter(c -> c instanceof JScrollPane)
                                 .forEach(c -> scrollToBot((JScrollPane) c));

@@ -9,6 +9,7 @@ public class ChatServer {
     private static int clientCount = 0;
     private static Map<PrintWriter, String> clientNames = new HashMap<>();
     private static Set<PrintWriter> clientWriters = new HashSet<>();
+    private static List<String> messageHistory = new ArrayList<>(); // Store last 50 messages
 
     public static void main(String[] args) {
         System.out.println("Chat Server is running on port " + PORT);
@@ -54,11 +55,23 @@ public class ChatServer {
 
     public static void broadcast(String message, PrintWriter excludeWriter) {
         synchronized (clientWriters) {
+            // Add to history (limit to 50)
+            if (message.startsWith("MSG:")) {
+                messageHistory.add(message);
+                if (messageHistory.size() > 50)
+                    messageHistory.remove(0);
+            }
             for (PrintWriter writer : clientWriters) {
                 if (writer != excludeWriter) {
                     writer.println(message);
                 }
             }
+        }
+    }
+
+    public static List<String> getHistory() {
+        synchronized (clientWriters) {
+            return new ArrayList<>(messageHistory);
         }
     }
 
