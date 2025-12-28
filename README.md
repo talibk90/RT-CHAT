@@ -14,6 +14,8 @@
 *   **😊 Emoji Support**: Integrated emoji picker for expressive communication.
 *   **👤 Dynamic Avatars**: Auto-generated user avatars with initials.
 *   **⚡ Real-time Updates**: Instant message delivery and status updates (Join/Leave).
+*   **🕒 Chat History Retention**: New users receive the last 50 messages upon joining.
+*   **💤 Offline Status**: Users who leave are marked as "(Offline)" and can still be messaged or viewed.
 
 ## 🛠️ Tech Stack
 
